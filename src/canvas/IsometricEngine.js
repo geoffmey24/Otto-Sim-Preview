@@ -22,8 +22,8 @@ export function setupCanvas(canvasRef, containerRef) {
 export function startRenderLoop(drawFrameFn) {
   let frameId;
 
-  function loop() {
-    drawFrameFn();
+  function loop(timestamp) {
+    drawFrameFn(timestamp);
     frameId = requestAnimationFrame(loop);
   }
 

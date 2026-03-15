@@ -1,17 +1,25 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { setupCanvas, startRenderLoop } from '../canvas/IsometricEngine';
 import { drawGround, drawRoads } from '../canvas/Ground';
 import { drawAllBuildings, generateWindowStates } from '../canvas/Buildings';
 import { drawTrees } from '../canvas/Vegetation';
 import { drawCar, createNPCs, updateNPC, drawNPC, drawPlayer } from '../canvas/Characters';
+import { drawSelectionGlow } from '../canvas/Effects';
 import HUD from '../components/HUD';
+import DecisionCard from '../components/DecisionCard';
 import { GRID, BUILDINGS } from '../constants';
-import { toGrid, distance } from '../utils/helpers';
+import { toGrid, toScreen, distance } from '../utils/helpers';
+import { SCENARIOS } from '../game/Scenarios';
 
 export default function WorldMap({
   playerName, playerAvatar,
   finances, health, mental, relationships,
   year, month, actionsLeft,
+  activeBuilding, selectedScenario,
+  cardOpen, cardClosing,
+  setActiveBuilding, setSelectedScenario,
+  setCardOpen, setCardClosing,
+  applyImpacts, useAction,
   onSummary, onYearBanner, onGameOver,
 }) {
   const canvasRef = useRef(null);
@@ -23,6 +31,8 @@ export default function WorldMap({
   const targetPosRef = useRef({ col: 10, row: 10 });
   const pendingBuildingRef = useRef(null);
   const configRef = useRef(null);
+  const arrivedRef = useRef(false);
+  const cardGuardRef = useRef(false);
 
   useEffect(() => {
     if (!windowStatesRef.current) {
@@ -45,7 +55,7 @@ export default function WorldMap({
     };
     configRef.current = config;
 
-    const cleanup = startRenderLoop(() => {
+    const cleanup = startRenderLoop((timestamp) => {
       // Update phase
       carColRef.current += 0.025;
       if (carColRef.current > 21) carColRef.current = -2;
@@ -64,21 +74,38 @@ export default function WorldMap({
         pp.row = tp.row;
       }
 
-      if (pendingBuildingRef.current) {
+      // Building arrival detection
+      if (pendingBuildingRef.current && !arrivedRef.current && !cardGuardRef.current) {
         const b = pendingBuildingRef.current;
         const bcx = b.gridCol + b.tileW / 2;
         const bcy = b.gridRow + b.tileD / 2;
         if (distance(pp.col, pp.row, bcx, bcy) < 0.5) {
-          pendingBuildingRef.current = null;
+          arrivedRef.current = true;
+          const scenarios = SCENARIOS[b.id];
+          if (scenarios && scenarios.length > 0) {
+            const pick = scenarios[Math.floor(Math.random() * scenarios.length)];
+            setActiveBuilding(b);
+            setSelectedScenario(pick);
+            cardGuardRef.current = true;
+            setTimeout(() => {
+              setCardOpen(true);
+            }, 600);
+          }
         }
       }
 
       // Render phase
+      const now = timestamp || Date.now();
       ctx.clearRect(0, 0, width, height);
       drawGround(ctx, config);
       drawRoads(ctx, config);
       drawAllBuildings(ctx, config, windowStatesRef.current);
       drawTrees(ctx, config);
+
+      // Draw selection glow on active building
+      if (pendingBuildingRef.current) {
+        drawSelectionGlow(ctx, pendingBuildingRef.current, config.originX, config.originY, config.tileWidth, config.tileHeight, now);
+      }
 
       const npcsSorted = [...npcs].sort((a, b) => a.row - b.row);
       for (let i = 0; i < npcsSorted.length; i++) {
@@ -90,9 +117,11 @@ export default function WorldMap({
     });
 
     return cleanup;
-  }, [playerName, playerAvatar]);
+  }, [playerName, playerAvatar, setActiveBuilding, setSelectedScenario, setCardOpen]);
 
   const handleInteraction = useCallback((clientX, clientY) => {
+    if (cardGuardRef.current) return;
+
     const canvas = canvasRef.current;
     const config = configRef.current;
     if (!canvas || !config) return;
@@ -110,12 +139,14 @@ export default function WorldMap({
       if (distance(gridPos.col, gridPos.row, bcx, bcy) < 2.0) {
         targetPosRef.current = { col: bcx, row: bcy };
         pendingBuildingRef.current = b;
+        arrivedRef.current = false;
         return;
       }
     }
 
     targetPosRef.current = { col: gridPos.col, row: gridPos.row };
     pendingBuildingRef.current = null;
+    arrivedRef.current = false;
   }, []);
 
   const handleClick = useCallback((e) => {
@@ -128,6 +159,38 @@ export default function WorldMap({
       handleInteraction(e.touches[0].clientX, e.touches[0].clientY);
     }
   }, [handleInteraction]);
+
+  const handleCardChoice = useCallback((impacts) => {
+    applyImpacts(impacts);
+    useAction();
+  }, [applyImpacts, useAction]);
+
+  const handleCardClose = useCallback(() => {
+    setCardOpen(false);
+    setCardClosing(false);
+    setActiveBuilding(null);
+    setSelectedScenario(null);
+    pendingBuildingRef.current = null;
+    arrivedRef.current = false;
+    cardGuardRef.current = false;
+
+    // Check if actions are depleted — trigger month summary
+    // Use setTimeout to allow state to settle
+    setTimeout(() => {
+      // We read actionsLeft from the closure; useAction already decremented it
+      // But since we can't read the updated value directly, we use a ref trick
+    }, 100);
+  }, [setCardOpen, setCardClosing, setActiveBuilding, setSelectedScenario]);
+
+  // Watch for actionsLeft hitting 0 to trigger month summary
+  useEffect(() => {
+    if (actionsLeft <= 0 && !cardOpen && !cardGuardRef.current) {
+      const timer = setTimeout(() => {
+        onSummary();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [actionsLeft, cardOpen, onSummary]);
 
   return (
     <div
@@ -161,6 +224,16 @@ export default function WorldMap({
         mental={mental}
         relationships={relationships}
       />
+
+      {cardOpen && selectedScenario && activeBuilding && (
+        <DecisionCard
+          scenario={selectedScenario}
+          locationName={activeBuilding.name}
+          actionsLeft={actionsLeft}
+          onChoice={handleCardChoice}
+          onClose={handleCardClose}
+        />
+      )}
     </div>
   );
 }

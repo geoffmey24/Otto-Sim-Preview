@@ -108,8 +108,13 @@ export function useGameState() {
     setPreviousStats({ finances, health, mental, relationships });
   }, [finances, health, mental, relationships]);
 
+  const useAction = useCallback(() => {
+    setActionsLeft(prev => Math.max(0, prev - 1));
+  }, []);
+
   const advanceMonth = useCallback(() => {
     snapshotStats();
+    applyDecay();
     setMonth(prev => {
       if (prev >= 12) {
         setYear(y => y + 1);
@@ -119,7 +124,7 @@ export function useGameState() {
       return prev + 1;
     });
     setActionsLeft(ACTIONS_PER_MONTH);
-  }, [snapshotStats]);
+  }, [snapshotStats, applyDecay]);
 
   const resetGame = useCallback(() => {
     setFinances(STARTING_STATS.finances);
@@ -160,6 +165,7 @@ export function useGameState() {
     setPlayerInfo,
     applyImpacts,
     applyDecay,
+    useAction,
     checkGameOver: () => checkGameOver(finances, health, mental, relationships),
     advanceMonth,
     resetGame,
