@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import CharacterCreation from './screens/CharacterCreation';
 import WorldMap from './screens/WorldMap';
 import MonthSummary from './screens/MonthSummary';
 import YearBanner from './screens/YearBanner';
 import GameOver from './screens/GameOver';
+import { useGameState } from './game/GameState';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState('loading');
-  const [playerName, setPlayerName] = useState('');
-  const [playerAvatar, setPlayerAvatar] = useState(0);
+  const gs = useGameState();
 
   useEffect(() => {
     document.fonts.ready.then(() => {
-      setCurrentScreen('creation');
+      gs.setCurrentScreen('creation');
     });
   }, []);
 
@@ -24,7 +23,7 @@ export default function App() {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {currentScreen === 'loading' && (
+      {gs.currentScreen === 'loading' && (
         <div style={{
           width: '100%',
           height: '100vh',
@@ -44,45 +43,48 @@ export default function App() {
         </div>
       )}
 
-      {currentScreen === 'creation' && (
+      {gs.currentScreen === 'creation' && (
         <CharacterCreation
           onStart={(playerData) => {
-            setPlayerName(playerData.name);
-            setPlayerAvatar(playerData.avatarIndex);
-            setCurrentScreen('world');
+            gs.setPlayerInfo(playerData.name, playerData.avatarIndex);
+            gs.snapshotStats();
+            gs.setCurrentScreen('world');
           }}
         />
       )}
 
-      {currentScreen === 'world' && (
+      {gs.currentScreen === 'world' && (
         <WorldMap
-          playerName={playerName}
-          playerAvatar={playerAvatar}
-          onSummary={() => setCurrentScreen('summary')}
-          onYearBanner={() => setCurrentScreen('yearBanner')}
-          onGameOver={() => setCurrentScreen('gameOver')}
+          playerName={gs.playerName}
+          playerAvatar={gs.playerAvatar}
+          finances={gs.finances}
+          health={gs.health}
+          mental={gs.mental}
+          relationships={gs.relationships}
+          year={gs.year}
+          month={gs.month}
+          actionsLeft={gs.actionsLeft}
+          onSummary={() => gs.setCurrentScreen('summary')}
+          onYearBanner={() => gs.setCurrentScreen('yearBanner')}
+          onGameOver={() => gs.setCurrentScreen('gameOver')}
         />
       )}
 
-      {currentScreen === 'summary' && (
+      {gs.currentScreen === 'summary' && (
         <MonthSummary
-          onContinue={() => setCurrentScreen('world')}
+          onContinue={() => gs.setCurrentScreen('world')}
         />
       )}
 
-      {currentScreen === 'yearBanner' && (
+      {gs.currentScreen === 'yearBanner' && (
         <YearBanner
-          onContinue={() => setCurrentScreen('world')}
+          onContinue={() => gs.setCurrentScreen('world')}
         />
       )}
 
-      {currentScreen === 'gameOver' && (
+      {gs.currentScreen === 'gameOver' && (
         <GameOver
-          onRestart={() => {
-            setPlayerName('');
-            setPlayerAvatar(0);
-            setCurrentScreen('creation');
-          }}
+          onRestart={() => gs.resetGame()}
         />
       )}
     </div>

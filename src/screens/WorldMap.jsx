@@ -4,10 +4,16 @@ import { drawGround, drawRoads } from '../canvas/Ground';
 import { drawAllBuildings, generateWindowStates } from '../canvas/Buildings';
 import { drawTrees } from '../canvas/Vegetation';
 import { drawCar, createNPCs, updateNPC, drawNPC, drawPlayer } from '../canvas/Characters';
+import HUD from '../components/HUD';
 import { GRID, BUILDINGS } from '../constants';
 import { toGrid, distance } from '../utils/helpers';
 
-export default function WorldMap({ playerName, playerAvatar, onSummary, onYearBanner, onGameOver }) {
+export default function WorldMap({
+  playerName, playerAvatar,
+  finances, health, mental, relationships,
+  year, month, actionsLeft,
+  onSummary, onYearBanner, onGameOver,
+}) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const windowStatesRef = useRef(null);
@@ -40,18 +46,15 @@ export default function WorldMap({ playerName, playerAvatar, onSummary, onYearBa
     configRef.current = config;
 
     const cleanup = startRenderLoop(() => {
-      // ─── Update phase ───
-      // Car movement
+      // Update phase
       carColRef.current += 0.025;
       if (carColRef.current > 21) carColRef.current = -2;
 
-      // NPC movement
       const npcs = npcsRef.current;
       for (let i = 0; i < npcs.length; i++) {
         updateNPC(npcs[i]);
       }
 
-      // Player smooth movement
       const pp = playerPosRef.current;
       const tp = targetPosRef.current;
       pp.col += (tp.col - pp.col) * 0.12;
@@ -61,7 +64,6 @@ export default function WorldMap({ playerName, playerAvatar, onSummary, onYearBa
         pp.row = tp.row;
       }
 
-      // Check if player arrived at pending building
       if (pendingBuildingRef.current) {
         const b = pendingBuildingRef.current;
         const bcx = b.gridCol + b.tileW / 2;
@@ -71,35 +73,25 @@ export default function WorldMap({ playerName, playerAvatar, onSummary, onYearBa
         }
       }
 
-      // ─── Render phase ───
-      // 1. Clear
+      // Render phase
       ctx.clearRect(0, 0, width, height);
-      // 2-3. Sky + ground tiles
       drawGround(ctx, config);
-      // 4-5. Roads + markings
       drawRoads(ctx, config);
-      // 6-9. Buildings (shadows, park grass, buildings, park elements, labels)
       drawAllBuildings(ctx, config, windowStatesRef.current);
-      // 10. Trees
       drawTrees(ctx, config);
 
-      // 11. NPCs (sorted back-to-front by row)
       const npcsSorted = [...npcs].sort((a, b) => a.row - b.row);
       for (let i = 0; i < npcsSorted.length; i++) {
         drawNPC(ctx, npcsSorted[i], config);
       }
 
-      // 12. Car
       drawCar(ctx, carColRef.current, config);
-
-      // 13-14. Player character + name tag
       drawPlayer(ctx, pp.col, pp.row, playerAvatar, playerName, config);
     });
 
     return cleanup;
   }, [playerName, playerAvatar]);
 
-  // ─── Click/touch handling ───
   const handleInteraction = useCallback((clientX, clientY) => {
     const canvas = canvasRef.current;
     const config = configRef.current;
@@ -111,7 +103,6 @@ export default function WorldMap({ playerName, playerAvatar, onSummary, onYearBa
 
     const gridPos = toGrid(x, y, config.originX, config.originY, config.tileWidth, config.tileHeight);
 
-    // Check if clicked near a building
     for (let i = 0; i < BUILDINGS.length; i++) {
       const b = BUILDINGS[i];
       const bcx = b.gridCol + b.tileW / 2;
@@ -123,7 +114,6 @@ export default function WorldMap({ playerName, playerAvatar, onSummary, onYearBa
       }
     }
 
-    // Otherwise move to clicked tile
     targetPosRef.current = { col: gridPos.col, row: gridPos.row };
     pendingBuildingRef.current = null;
   }, []);
@@ -159,6 +149,17 @@ export default function WorldMap({ playerName, playerAvatar, onSummary, onYearBa
           height: '100%',
           display: 'block',
         }}
+      />
+      <HUD
+        playerName={playerName}
+        avatarIndex={playerAvatar}
+        year={year}
+        month={month}
+        actionsLeft={actionsLeft}
+        finances={finances}
+        health={health}
+        mental={mental}
+        relationships={relationships}
       />
     </div>
   );
