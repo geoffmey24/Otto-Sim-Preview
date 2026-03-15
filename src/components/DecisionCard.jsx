@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 
 const STAT_NAMES = {
   finances: 'Finances',
@@ -77,9 +77,12 @@ export default function DecisionCard({ scenario, locationName, actionsLeft, onCh
   const [closing, setClosing] = useState(false);
   const [pressedIndex, setPressedIndex] = useState(-1);
   const [randomResult, setRandomResult] = useState(null);
+  const choiceLockedRef = useRef(false);
 
   const handleChoice = useCallback((choice, index) => {
-    if (closing) return;
+    // Guard against rapid double-tap
+    if (closing || choiceLockedRef.current) return;
+    choiceLockedRef.current = true;
     setPressedIndex(index);
 
     let finalImpacts = { ...choice.impacts };
@@ -144,6 +147,8 @@ export default function DecisionCard({ scenario, locationName, actionsLeft, onCh
         right: 0,
         zIndex: 20,
         maxWidth: 480,
+        maxHeight: '70vh',
+        overflowY: 'auto',
         margin: '0 auto',
         background: 'linear-gradient(180deg, #0f1a2e, #0a1020)',
         borderRadius: '28px 28px 0 0',
@@ -231,7 +236,7 @@ export default function DecisionCard({ scenario, locationName, actionsLeft, onCh
               <button
                 key={i}
                 onClick={() => handleChoice(choice, i)}
-                disabled={closing || randomResult !== null}
+                disabled={closing || choiceLockedRef.current || randomResult !== null}
                 style={{
                   width: '100%',
                   minHeight: 56,
@@ -245,6 +250,7 @@ export default function DecisionCard({ scenario, locationName, actionsLeft, onCh
                   fontFamily: "'Fredoka One', cursive",
                   fontSize: 14,
                   transform: isPressed ? 'scale(0.97)' : 'scale(1)',
+                  outline: 'none',
                   ...btnStyle,
                 }}
               >

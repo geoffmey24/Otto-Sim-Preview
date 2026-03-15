@@ -909,15 +909,17 @@ function drawFriendsDetails(ctx, b, c) {
   drawWindows(ctx, c.rf, 2, 1, null, { allLit: true });
 }
 
+// Pre-sort buildings once at module load (static data)
+const sortedBuildings = [...BUILDINGS].sort(
+  (a, b) => (a.gridCol + a.gridRow) - (b.gridCol + b.gridRow)
+);
+
 // ─── Main export ───────────────────────────────────────
 
 export function drawAllBuildings(ctx, config, windowStates) {
   const { originX: ox, originY: oy, tileWidth: tw, tileHeight: th } = config;
 
-  // Sort back-to-front by grid position
-  const sorted = [...BUILDINGS].sort(
-    (a, b) => (a.gridCol + a.gridRow) - (b.gridCol + b.gridRow)
-  );
+  const sorted = sortedBuildings;
 
   // First pass: shadows (skip park)
   for (let i = 0; i < sorted.length; i++) {

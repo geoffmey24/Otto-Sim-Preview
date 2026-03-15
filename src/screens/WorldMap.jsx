@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { setupCanvas, startRenderLoop } from '../canvas/IsometricEngine';
 import { drawGround, drawRoads } from '../canvas/Ground';
 import { drawAllBuildings, generateWindowStates } from '../canvas/Buildings';
@@ -8,7 +8,7 @@ import { drawSelectionGlow } from '../canvas/Effects';
 import HUD from '../components/HUD';
 import DecisionCard from '../components/DecisionCard';
 import { GRID, BUILDINGS } from '../constants';
-import { toGrid, toScreen, distance } from '../utils/helpers';
+import { toGrid, distance } from '../utils/helpers';
 import { SCENARIOS } from '../game/Scenarios';
 
 export default function WorldMap({
@@ -33,6 +33,12 @@ export default function WorldMap({
   const configRef = useRef(null);
   const arrivedRef = useRef(false);
   const cardGuardRef = useRef(false);
+  const actionsLeftRef = useRef(actionsLeft);
+
+  // Keep actionsLeft ref in sync for use in render loop guard
+  useEffect(() => {
+    actionsLeftRef.current = actionsLeft;
+  }, [actionsLeft]);
 
   useEffect(() => {
     if (!windowStatesRef.current) {
@@ -81,15 +87,20 @@ export default function WorldMap({
         const bcy = b.gridRow + b.tileD / 2;
         if (distance(pp.col, pp.row, bcx, bcy) < 0.5) {
           arrivedRef.current = true;
-          const scenarios = SCENARIOS[b.id];
-          if (scenarios && scenarios.length > 0) {
-            const pick = scenarios[Math.floor(Math.random() * scenarios.length)];
-            setActiveBuilding(b);
-            setSelectedScenario(pick);
-            cardGuardRef.current = true;
-            setTimeout(() => {
-              setCardOpen(true);
-            }, 600);
+          // Guard: no actions left means no card
+          if (actionsLeftRef.current <= 0) {
+            pendingBuildingRef.current = null;
+          } else {
+            const scenarios = SCENARIOS[b.id];
+            if (scenarios && scenarios.length > 0) {
+              const pick = scenarios[Math.floor(Math.random() * scenarios.length)];
+              setActiveBuilding(b);
+              setSelectedScenario(pick);
+              cardGuardRef.current = true;
+              setTimeout(() => {
+                setCardOpen(true);
+              }, 600);
+            }
           }
         }
       }
@@ -120,7 +131,9 @@ export default function WorldMap({
   }, [playerName, playerAvatar, setActiveBuilding, setSelectedScenario, setCardOpen]);
 
   const handleInteraction = useCallback((clientX, clientY) => {
+    // Guard: card open/closing or no actions left
     if (cardGuardRef.current) return;
+    if (actionsLeftRef.current <= 0) return;
 
     const canvas = canvasRef.current;
     const config = configRef.current;
@@ -173,13 +186,6 @@ export default function WorldMap({
     pendingBuildingRef.current = null;
     arrivedRef.current = false;
     cardGuardRef.current = false;
-
-    // Check if actions are depleted — trigger month summary
-    // Use setTimeout to allow state to settle
-    setTimeout(() => {
-      // We read actionsLeft from the closure; useAction already decremented it
-      // But since we can't read the updated value directly, we use a ref trick
-    }, 100);
   }, [setCardOpen, setCardClosing, setActiveBuilding, setSelectedScenario]);
 
   // Watch for actionsLeft hitting 0 to trigger month summary
@@ -211,6 +217,7 @@ export default function WorldMap({
           width: '100%',
           height: '100%',
           display: 'block',
+          touchAction: 'none',
         }}
       />
       <HUD

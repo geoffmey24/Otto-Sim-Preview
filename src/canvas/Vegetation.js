@@ -1,14 +1,14 @@
 import { toScreen } from '../utils/helpers';
 import { TREE_POSITIONS } from '../constants';
 
+// Pre-sort trees once at module load (static data, never changes)
+const sortedTrees = [...TREE_POSITIONS].sort((a, b) => a.row - b.row);
+
 export function drawTrees(ctx, config) {
   const { originX: ox, originY: oy, tileWidth: tw, tileHeight: th } = config;
 
-  // Sort back-to-front by row
-  const sorted = [...TREE_POSITIONS].sort((a, b) => a.row - b.row);
-
-  for (let i = 0; i < sorted.length; i++) {
-    const tree = sorted[i];
+  for (let i = 0; i < sortedTrees.length; i++) {
+    const tree = sortedTrees[i];
     const s = tree.scale;
     const pos = toScreen(tree.col, tree.row, ox, oy, tw, th);
     const sx = pos.x;
