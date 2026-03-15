@@ -47,18 +47,34 @@ export const BUILDINGS = [
 ];
 
 export const TREE_POSITIONS = [
-  { col: 1, row: 3, scale: 0.8 },
-  { col: 5, row: 7, scale: 1.0 },
-  { col: 7, row: 8, scale: 1.2 },
-  { col: 0, row: 10, scale: 0.8 },
-  { col: 18, row: 4, scale: 1.0 },
-  { col: 17, row: 8, scale: 1.2 },
-  { col: 4, row: 18, scale: 0.8 },
-  { col: 8, row: 17, scale: 1.0 },
-  { col: 19, row: 13, scale: 1.2 },
-  { col: 1, row: 7, scale: 0.8 },
-  { col: 16, row: 2, scale: 1.0 },
-  { col: 12, row: 19, scale: 1.0 },
+  { col: 1, row: 3, scale: 0.8, type: 'round' },
+  { col: 5, row: 7, scale: 1.0, type: 'oak' },
+  { col: 7, row: 8, scale: 1.2, type: 'round' },
+  { col: 0, row: 10, scale: 0.8, type: 'pine' },
+  { col: 18, row: 4, scale: 1.0, type: 'pine' },
+  { col: 17, row: 8, scale: 1.2, type: 'oak' },
+  { col: 4, row: 18, scale: 0.8, type: 'round' },
+  { col: 8, row: 17, scale: 1.0, type: 'oak' },
+  { col: 19, row: 13, scale: 1.2, type: 'round' },
+  { col: 1, row: 7, scale: 0.8, type: 'pine' },
+  { col: 16, row: 2, scale: 1.0, type: 'round' },
+  { col: 12, row: 19, scale: 1.0, type: 'pine' },
+  { col: 3, row: 1, scale: 0.9, type: 'oak' },
+  { col: 19, row: 18, scale: 1.1, type: 'round' },
+  { col: 6, row: 14, scale: 0.9, type: 'pine' },
+];
+
+export const BUSH_POSITIONS = [
+  { col: 2, row: 4, scale: 0.5 },
+  { col: 6, row: 6, scale: 0.6 },
+  { col: 0.5, row: 8, scale: 0.4 },
+  { col: 17, row: 5, scale: 0.5 },
+  { col: 18, row: 9, scale: 0.6 },
+  { col: 3, row: 19, scale: 0.5 },
+  { col: 15, row: 1, scale: 0.4 },
+  { col: 7, row: 16, scale: 0.5 },
+  { col: 19, row: 15, scale: 0.6 },
+  { col: 1, row: 14, scale: 0.5 },
 ];
 
 export const AVATARS = [

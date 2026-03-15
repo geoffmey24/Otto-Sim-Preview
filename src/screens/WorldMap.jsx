@@ -3,8 +3,8 @@ import { setupCanvas, startRenderLoop } from '../canvas/IsometricEngine';
 import { drawGround, drawRoads } from '../canvas/Ground';
 import { drawAllBuildings, generateWindowStates } from '../canvas/Buildings';
 import { drawTrees } from '../canvas/Vegetation';
-import { drawCar, createNPCs, updateNPC, drawNPC, drawPlayer } from '../canvas/Characters';
-import { drawSelectionGlow } from '../canvas/Effects';
+import { drawCar, drawCar2, createNPCs, updateNPC, drawNPC, drawPlayer } from '../canvas/Characters';
+import { drawSelectionGlow, drawAmbientEffects } from '../canvas/Effects';
 import HUD from '../components/HUD';
 import DecisionCard from '../components/DecisionCard';
 import { GRID, BUILDINGS } from '../constants';
@@ -26,6 +26,7 @@ export default function WorldMap({
   const containerRef = useRef(null);
   const windowStatesRef = useRef(null);
   const carColRef = useRef(-2);
+  const car2RowRef = useRef(-2);
   const npcsRef = useRef(null);
   const playerPosRef = useRef({ col: 10, row: 10 });
   const targetPosRef = useRef({ col: 10, row: 10 });
@@ -65,6 +66,8 @@ export default function WorldMap({
       // Update phase
       carColRef.current += 0.025;
       if (carColRef.current > 21) carColRef.current = -2;
+      car2RowRef.current += 0.018;
+      if (car2RowRef.current > 21) car2RowRef.current = -2;
 
       const npcs = npcsRef.current;
       for (let i = 0; i < npcs.length; i++) {
@@ -108,10 +111,10 @@ export default function WorldMap({
       // Render phase
       const now = timestamp || Date.now();
       ctx.clearRect(0, 0, width, height);
-      drawGround(ctx, config);
+      drawGround(ctx, config, now);
       drawRoads(ctx, config);
-      drawAllBuildings(ctx, config, windowStatesRef.current);
-      drawTrees(ctx, config);
+      drawAllBuildings(ctx, config, windowStatesRef.current, now);
+      drawTrees(ctx, config, now);
 
       // Draw selection glow on active building
       if (pendingBuildingRef.current) {
@@ -124,7 +127,11 @@ export default function WorldMap({
       }
 
       drawCar(ctx, carColRef.current, config);
-      drawPlayer(ctx, pp.col, pp.row, playerAvatar, playerName, config);
+      drawCar2(ctx, car2RowRef.current, config);
+      drawPlayer(ctx, pp.col, pp.row, playerAvatar, playerName, config, tp.col, tp.row);
+
+      // Atmospheric overlay effects (drawn last)
+      drawAmbientEffects(ctx, config, now);
     });
 
     return cleanup;
