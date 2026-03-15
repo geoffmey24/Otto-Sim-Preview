@@ -1,13 +1,20 @@
 import React, { useRef, useEffect } from 'react';
 import { setupCanvas, startRenderLoop } from '../canvas/IsometricEngine';
 import { drawGround, drawRoads } from '../canvas/Ground';
+import { drawAllBuildings, generateWindowStates } from '../canvas/Buildings';
 import { GRID } from '../constants';
 
 export default function WorldMap({ playerName, playerAvatar, onSummary, onYearBanner, onGameOver }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
+  const windowStatesRef = useRef(null);
 
   useEffect(() => {
+    // Generate stable window states once
+    if (!windowStatesRef.current) {
+      windowStatesRef.current = generateWindowStates();
+    }
+
     const { ctx, width, height, originX, originY } = setupCanvas(canvasRef, containerRef);
 
     const config = {
@@ -24,6 +31,7 @@ export default function WorldMap({ playerName, playerAvatar, onSummary, onYearBa
       ctx.clearRect(0, 0, width, height);
       drawGround(ctx, config);
       drawRoads(ctx, config);
+      drawAllBuildings(ctx, config, windowStatesRef.current);
     });
 
     return cleanup;
