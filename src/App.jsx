@@ -46,9 +46,9 @@ export default function App() {
 
       {currentScreen === 'creation' && (
         <CharacterCreation
-          onComplete={(name, avatar) => {
-            setPlayerName(name);
-            setPlayerAvatar(avatar);
+          onStart={(playerData) => {
+            setPlayerName(playerData.name);
+            setPlayerAvatar(playerData.avatarIndex);
             setCurrentScreen('world');
           }}
         />
