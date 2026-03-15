@@ -74,10 +74,7 @@ export default function App() {
           setCardClosing={gs.setCardClosing}
           applyImpacts={gs.applyImpacts}
           useAction={gs.useAction}
-          onSummary={() => {
-            gs.advanceMonth();
-            gs.setCurrentScreen('summary');
-          }}
+          onSummary={() => gs.setCurrentScreen('summary')}
           onYearBanner={() => gs.setCurrentScreen('yearBanner')}
           onGameOver={() => gs.setCurrentScreen('gameOver')}
         />
@@ -85,27 +82,26 @@ export default function App() {
 
       {gs.currentScreen === 'summary' && (
         <MonthSummary
-          finances={gs.finances}
-          health={gs.health}
-          mental={gs.mental}
-          relationships={gs.relationships}
+          stats={{
+            finances: gs.finances,
+            health: gs.health,
+            mental: gs.mental,
+            relationships: gs.relationships,
+          }}
+          previousStats={gs.previousStats}
           month={gs.month}
           year={gs.year}
-          onContinue={() => {
-            if (gs.showYearBanner) {
-              gs.setShowYearBanner(false);
-              gs.setCurrentScreen('yearBanner');
-            } else {
-              gs.setCurrentScreen('world');
-            }
-          }}
+          onNextMonth={gs.handleNextMonth}
         />
       )}
 
       {gs.currentScreen === 'yearBanner' && (
         <YearBanner
           year={gs.year}
-          onContinue={() => gs.setCurrentScreen('world')}
+          onDismiss={() => {
+            gs.setShowYearBanner(false);
+            gs.setCurrentScreen('world');
+          }}
         />
       )}
 

@@ -1,52 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 
-export default function YearBanner({ year, onContinue }) {
-  const [visible, setVisible] = useState(false);
+const CONFETTI_COLORS = ['#f5c842', '#6fcf97', '#56ccf2', '#bc80bd', '#eb5757', '#fc8d59'];
 
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 100);
-    return () => clearTimeout(t);
+export default function YearBanner({ year, onDismiss }) {
+  const confetti = useMemo(() => {
+    const items = [];
+    for (let i = 0; i < 15; i++) {
+      items.push({
+        left: (5 + Math.random() * 90) + '%',
+        top: (30 + Math.random() * 20) + '%',
+        color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+        delay: (Math.random() * 1).toFixed(2) + 's',
+      });
+    }
+    return items;
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      onContinue();
-    }, 2400);
-    return () => clearTimeout(t);
-  }, [onContinue]);
+    const timer = setTimeout(() => {
+      onDismiss();
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
 
   return (
     <div style={{
-      width: '100%',
-      height: '100vh',
-      background: '#0a0f1e',
+      position: 'fixed',
+      inset: 0,
+      zIndex: 35,
+      background: 'rgba(10,15,30,0.9)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      animation: 'fadeIn 0.4s ease both',
+      animation: 'fadeIn 0.3s ease',
     }}>
-      <span style={{
-        fontFamily: "'Nunito', sans-serif",
-        fontSize: 14,
-        fontWeight: 700,
-        color: '#f5c842',
-        textTransform: 'uppercase',
-        letterSpacing: 3,
-        marginBottom: 8,
-        opacity: visible ? 1 : 0,
-        transition: 'opacity 0.6s ease',
-      }}>New Year</span>
+      {/* Confetti particles */}
+      {confetti.map((c, i) => (
+        <div
+          key={i}
+          style={{
+            width: 8,
+            height: 8,
+            position: 'absolute',
+            left: c.left,
+            top: c.top,
+            background: c.color,
+            animation: 'confettiFall 1.5s ease-out forwards',
+            animationDelay: c.delay,
+          }}
+        />
+      ))}
 
+      {/* Title */}
       <h1 style={{
         fontFamily: "'Fredoka One', cursive",
-        fontSize: 56,
-        color: '#ffffff',
+        fontSize: 36,
+        color: '#f5c842',
+        textAlign: 'center',
+        textShadow: '0 0 30px rgba(245,200,66,0.4)',
         margin: 0,
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'scale(1)' : 'scale(0.8)',
-        transition: 'all 0.6s cubic-bezier(0.32,0.72,0,1)',
-      }}>Year {year}</h1>
+      }}>Year {year} Complete!</h1>
     </div>
   );
 }

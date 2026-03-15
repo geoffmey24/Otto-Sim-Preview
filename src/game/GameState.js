@@ -82,7 +82,39 @@ export function useGameState() {
     setHealth(prev => clampStat(prev + DECAY.health));
     setMental(prev => clampStat(prev + DECAY.mental));
     setRelationships(prev => clampStat(prev + DECAY.relationships));
-    // Check game over
+  }, []);
+
+  const snapshotStats = useCallback(() => {
+    setPreviousStats({ finances, health, mental, relationships });
+  }, [finances, health, mental, relationships]);
+
+  const useAction = useCallback(() => {
+    setActionsLeft(prev => Math.max(0, prev - 1));
+  }, []);
+
+  const advanceMonth = useCallback(() => {
+    setMonth(prev => {
+      if (prev >= 12) {
+        setYear(y => y + 1);
+        setShowYearBanner(true);
+        return 1;
+      }
+      return prev + 1;
+    });
+    setActionsLeft(ACTIONS_PER_MONTH);
+  }, []);
+
+  // Called when the player clicks "Next Month" in MonthSummary.
+  // Applies monthly decay, checks game over, and if alive: snapshots stats,
+  // advances month, and navigates to yearBanner or world.
+  const handleNextMonth = useCallback(() => {
+    // Apply decay
+    setFinances(prev => clampStat(prev + DECAY.finances));
+    setHealth(prev => clampStat(prev + DECAY.health));
+    setMental(prev => clampStat(prev + DECAY.mental));
+    setRelationships(prev => clampStat(prev + DECAY.relationships));
+
+    // After decay settles, read final values via nested setState
     setTimeout(() => {
       setFinances(f => {
         setHealth(h => {
@@ -92,6 +124,22 @@ export function useGameState() {
               if (result.isOver) {
                 setGameOverReason(result.reason);
                 setCurrentScreen('gameOver');
+              } else {
+                // Snapshot post-decay stats as baseline for next month
+                setPreviousStats({ finances: f, health: h, mental: m, relationships: r });
+                // Advance month
+                setMonth(prev => {
+                  if (prev >= 12) {
+                    setYear(y => y + 1);
+                    setShowYearBanner(true);
+                    // Navigate to yearBanner after a tick
+                    setTimeout(() => setCurrentScreen('yearBanner'), 20);
+                    return 1;
+                  }
+                  setCurrentScreen('world');
+                  return prev + 1;
+                });
+                setActionsLeft(ACTIONS_PER_MONTH);
               }
               return r;
             });
@@ -103,28 +151,6 @@ export function useGameState() {
       });
     }, 50);
   }, [checkGameOver]);
-
-  const snapshotStats = useCallback(() => {
-    setPreviousStats({ finances, health, mental, relationships });
-  }, [finances, health, mental, relationships]);
-
-  const useAction = useCallback(() => {
-    setActionsLeft(prev => Math.max(0, prev - 1));
-  }, []);
-
-  const advanceMonth = useCallback(() => {
-    snapshotStats();
-    applyDecay();
-    setMonth(prev => {
-      if (prev >= 12) {
-        setYear(y => y + 1);
-        setShowYearBanner(true);
-        return 1;
-      }
-      return prev + 1;
-    });
-    setActionsLeft(ACTIONS_PER_MONTH);
-  }, [snapshotStats, applyDecay]);
 
   const resetGame = useCallback(() => {
     setFinances(STARTING_STATS.finances);
@@ -168,6 +194,7 @@ export function useGameState() {
     useAction,
     checkGameOver: () => checkGameOver(finances, health, mental, relationships),
     advanceMonth,
+    handleNextMonth,
     resetGame,
     snapshotStats,
   };
