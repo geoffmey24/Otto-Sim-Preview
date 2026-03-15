@@ -108,9 +108,15 @@ export default function App() {
       {gs.currentScreen === 'gameOver' && (
         <GameOver
           reason={gs.gameOverReason}
-          year={gs.year}
+          stats={{
+            finances: gs.finances,
+            health: gs.health,
+            mental: gs.mental,
+            relationships: gs.relationships,
+          }}
           month={gs.month}
-          onRestart={() => gs.resetGame()}
+          year={gs.year}
+          onRetry={() => gs.resetGame()}
         />
       )}
     </div>
